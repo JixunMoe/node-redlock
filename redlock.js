@@ -61,7 +61,7 @@ Lock.prototype.unlock = async function unlock() {
 	return this.redlock.unlock(this);
 };
 
-Lock.prototype.extend = async function extend(ttl, ) {
+Lock.prototype.extend = async function extend(ttl) {
 	return this.redlock.extend(this, ttl);
 };
 
