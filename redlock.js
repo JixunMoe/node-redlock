@@ -2,7 +2,6 @@
 
 var util         = require('util');
 var crypto       = require('crypto');
-var Promise      = require('bluebird');
 var EventEmitter = require('events');
 
 // support the event library provided by node < 0.11.0
@@ -58,12 +57,12 @@ function Lock(redlock, resource, value, expiration, attempts) {
 	this.attempts   = attempts;
 }
 
-Lock.prototype.unlock = function unlock(callback) {
-	return this.redlock.unlock(this, callback);
+Lock.prototype.unlock = async function unlock() {
+	return this.redlock.unlock(this);
 };
 
-Lock.prototype.extend = function extend(ttl, callback) {
-	return this.redlock.extend(this, ttl, callback);
+Lock.prototype.extend = async function extend(ttl, ) {
+	return this.redlock.extend(this, ttl);
 };
 
 // Attach a reference to Lock, which allows the application to use instanceof
@@ -109,15 +108,12 @@ Redlock.LockError = LockError;
 // ----
 // This method runs `.quit()` on all client connections.
 
-Redlock.prototype.quit = function quit(callback) {
+Redlock.prototype.quit = async function quit() {
 
 	// quit all clients
-	return Promise.map(this.servers, function(client) {
+	return Promise.all(this.servers, async function(client) {
 		return client.quit();
-	})
-
-	// optionally run callback
-	.nodeify(callback);
+	});
 };
 
 
@@ -135,31 +131,8 @@ Redlock.prototype.quit = function quit(callback) {
 // )
 // ```
 Redlock.prototype.acquire =
-Redlock.prototype.lock = function lock(resource, ttl, callback) {
-	return this._lock(resource, null, ttl, callback);
-};
-
-// lock
-// ----
-// This method locks a resource using the redlock algorithm,
-// and returns a bluebird disposer.
-//
-// ```js
-// using(
-//   redlock.disposer(
-//     'some-resource',       // the resource to lock
-//     2000                   // ttl in ms
-//   ),
-//   function(lock) {
-//     ...
-//   }
-// );
-// ```
-Redlock.prototype.disposer = function disposer(resource, ttl, errorHandler) {
-	errorHandler = errorHandler || function(err) {};
-	return this._lock(resource, null, ttl).disposer(function(lock){
-		return lock.unlock().catch(errorHandler);
-	});
+Redlock.prototype.lock = async function lock(resource, ttl) {
+	return this._lock(resource, null, ttl);
 };
 
 
@@ -170,7 +143,7 @@ Redlock.prototype.disposer = function disposer(resource, ttl, errorHandler) {
 // attempt to restore the lock on nodes that failed to release. It is safe to re-attempt an
 // unlock or to ignore the error, as the lock will automatically expire after its timeout.
 Redlock.prototype.release =
-Redlock.prototype.unlock = function unlock(lock, callback) {
+Redlock.prototype.unlock = async function unlock(lock) {
 	var self = this;
 
 	// immediately invalidate the lock
@@ -216,35 +189,27 @@ Redlock.prototype.unlock = function unlock(lock, callback) {
 			// FAILURE: the lock could not be released
 			return reject(new LockError('Unable to fully release the lock on resource "' + lock.resource + '".'));
 		}
-	})
-
-	// optionally run callback
-	.nodeify(callback);
+	});
 };
 
 
 // extend
 // ------
 // This method extends a valid lock by the provided `ttl`.
-Redlock.prototype.extend = function extend(lock, ttl, callback) {
+Redlock.prototype.extend = async function extend(lock, ttl) {
 	var self = this;
 
 	// the lock has expired
 	if(lock.expiration < Date.now())
-		return Promise.reject(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.', 0)).nodeify(callback);
+		return Promise.reject(new LockError('Cannot extend lock on resource "' + lock.resource + '" because the lock has already expired.', 0));
 
 	// extend the lock
-	return self._lock(lock.resource, lock.value, ttl)
+	const extension = await self._lock(lock.resource, lock.value, ttl)
 
 	// modify and return the original lock object
-	.then(function(extension){
-		lock.value      = extension.value;
-		lock.expiration = extension.expiration;
-		return lock;
-	})
-
-	// optionally run callback
-	.nodeify(callback);
+	lock.value      = extension.value;
+	lock.expiration = extension.expiration;
+	return lock;
 };
 
 
@@ -258,10 +223,7 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 // redlock._lock(
 //   'some-resource',       // the resource to lock
 //   null,                  // no original lock value
-//   2000,                  // ttl in ms
-//   function(err, lock) {  // callback function (optional)
-//     ...
-//   }
+//   2000                   // ttl in ms
 // )
 // ```
 //
@@ -271,13 +233,10 @@ Redlock.prototype.extend = function extend(lock, ttl, callback) {
 // redlock._lock(
 //   'some-resource',       // the resource to lock
 //   'dkkk18g4gy39dx6r',    // the value of the original lock
-//   2000,                  // ttl in ms
-//   function(err, lock) {  // callback function (optional)
-//     ...
-//   }
+//   2000                   // ttl in ms
 // )
 // ```
-Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
+Redlock.prototype._lock = async function _lock(resource, value, ttl) {
 	var self = this;
 	return new Promise(function(resolve, reject) {
 		var request;
@@ -330,17 +289,17 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 				if(votes >= quorum && lock.expiration > Date.now())
 					return resolve(lock);
 
+				return (async function () {
+					try {
+						await lock.unlock();
+					} finally {					// RETRY
+						if(self.retryCount === -1 || attempts <= self.retryCount)
+							return setTimeout(attempt, Math.max(0, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter)));
 
-				// remove this lock from servers that voted for it
-				return lock.unlock(function(){
-
-					// RETRY
-					if(self.retryCount === -1 || attempts <= self.retryCount)
-						return setTimeout(attempt, Math.max(0, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter)));
-
-					// FAILED
-					return reject(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".', attempts));
-				});
+						// FAILED
+						return reject(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".', attempts));
+					}
+				})();
 			}
 
 			return self.servers.forEach(function(server){
@@ -349,10 +308,7 @@ Redlock.prototype._lock = function _lock(resource, value, ttl, callback) {
 		}
 
 		return attempt();
-	})
-
-	// optionally run callback
-	.nodeify(callback);
+	});
 };
 
 

@@ -1,9 +1,12 @@
-[![npm version](https://badge.fury.io/js/redlock.svg)](https://www.npmjs.com/package/redlock)
-[![Build Status](https://travis-ci.org/mike-marcacci/node-redlock.svg)](https://travis-ci.org/mike-marcacci/node-redlock)
-[![Coverage Status](https://coveralls.io/repos/mike-marcacci/node-redlock/badge.svg)](https://coveralls.io/r/mike-marcacci/node-redlock)
+[![npm version](https://badge.fury.io/js/redlock-async.svg)](https://www.npmjs.com/package/redlock-async)
+[![Build Status](https://travis-ci.org/JixunMoe/redlock-async.svg)](https://travis-ci.org/JixunMoe/redlock-async)
+[![Coverage Status](https://coveralls.io/repos/JixunMoe/redlock-async/badge.svg)](https://coveralls.io/r/JixunMoe/redlock-async)
 
-Redlock
-=======
+Redlock-async
+=============
+
+This is a fork of [`mike-marcacci/node-redlock`](https://github.com/mike-marcacci/node-redlock) that transforms its API to use native promise.
+
 This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and multi-redis environments, and provides fault tolerance through use of multiple independent redis instances or clusters.
 
 - [Installation](#installation)
@@ -98,8 +101,8 @@ redlock.on('clientError', function(err) {
 ```
 
 
-Usage (promise style)
----------------------
+Usage
+-----
 
 
 ### Locking & Unlocking
@@ -159,195 +162,29 @@ redlock.lock('locks:account:322456', 1000).then(function(lock) {
 ```
 
 
-Usage (disposer style)
-----------------------
-
-
-### Locking & Unlocking
-
-```js
-var using = require('bluebird').using;
-
-// the string identifier for the resource you want to lock
-var resource = 'locks:account:322456';
-
-// the maximum amount of time you want the resource locked,
-// keeping in mind that you can extend the lock up until
-// the point when it expires
-var ttl = 1000;
-
-// if we weren't able to reach redis, your lock will eventually
-// expire, but you probably want to do something like log that
-// an error occurred; if you don't pass a handler, this error
-// will be ignored
-function unlockErrorHandler(err) {
-	console.error(err);
-}
-
-using(redlock.disposer(resource, ttl, unlockErrorHandler), function(lock) {
-
-	// ...do something here...
-
-}); // <-- unlock is automatically handled by bluebird
-
-```
-
-
-### Locking and Extending
-
-```js
-using(redlock.disposer('locks:account:322456', 1000, unlockErrorHandler), function(lock) {
-
-	// ...do something here...
-
-	// if you need more time, you can continue to extend
-	// the lock as long as you never let it expire
-
-	// this will extend the lock so that it expires
-	// approximitely 1s from when `extend` is called
-	return lock.extend(1000).then(function(extended){
-
-		// Note that redlock modifies the original lock,
-		// so the vars `lock` and `extended` point to the
-		// exact same object
-
-		// ...do something here...
-
-	});
-}); // <-- unlock is automatically handled by bluebird
-
-```
-
-
-Usage (callback style)
-----------------------
-
-
-### Locking & Unlocking
-
-```js
-
-// the string identifier for the resource you want to lock
-var resource = 'locks:account:322456';
-
-// the maximum amount of time you want the resource locked,
-// keeping in mind that you can extend the lock up until
-// the point when it expires
-var ttl = 1000;
-
-redlock.lock(resource, ttl, function(err, lock) {
-
-	// we failed to lock the resource
-	if(err) {
-		// ...
-	}
-
-	// we have the lock
-	else {
-
-
-		// ...do something here...
-
-
-		// unlock your resource when you are done
-		lock.unlock(function(err) {
-			// we weren't able to reach redis; your lock will eventually
-			// expire, but you probably want to log this error
-			console.error(err);
-		});
-	}
-});
-
-```
-
-
-### Locking and Extending
-
-```js
-redlock.lock('locks:account:322456', 1000, function(err, lock) {
-
-	// we failed to lock the resource
-	if(err) {
-		// ...
-	}
-
-	// we have the lock
-	else {
-
-
-		// ...do something here...
-
-
-		// if you need more time, you can continue to extend
-		// the lock as long as you never let it expire
-
-		// this will extend the lock so that it expires
-		// approximitely 1s from when `extend` is called
-		lock.extend(1000, function(err, lock){
-
-			// we failed to extend the lock on the resource
-			if(err) {
-				// ...
-			}
-
-
-			// ...do something here...
-
-
-			// unlock your resource when you are done
-			lock.unlock();
-		}
-	}
-});
-
-```
-
 API Docs
 --------
 
-### `Redlock.prototype.lock(resource, ttl, ?callback) => Promise<Lock>`
+### `Redlock.prototype.lock(resource, ttl) => Promise<Lock>`
 - `resource (string)` resource to be locked
 - `ttl (number)` time in ms until the lock expires
-- `callback (function)` callback returning:
-	- `err (Error)`
-	- `lock (Lock)`
 
 
-### `Redlock.prototype.unlock(lock, ?callback) => Promise`
+### `Redlock.prototype.unlock(lock) => Promise`
 - `lock (Lock)` lock to be released
-- `callback (function)` callback returning:
-	- `err (Error)`
 
 
-### `Redlock.prototype.extend(lock, ttl, ?callback) => Promise<Lock>`
+### `Redlock.prototype.extend(lock, ttl) => Promise<Lock>`
 - `lock (Lock)` lock to be extended
 - `ttl (number)` time in ms to extend the lock's expiration
-- `callback (function)` callback returning:
-	- `err (Error)`
-	- `lock (Lock)`
 
 
-### `Redlock.prototype.disposer(resource, ttl, ?unlockErrorHandler)`
-- `resource (string)` resource to be locked
-- `ttl (number)` time in ms to extend the lock's expiration
-- `callback (function)` error handler called with:
-	- `err (Error)`
+### `Redlock.prototype.quit() => Promise<*[]>`
 
 
-### `Redlock.prototype.quit(?callback) => Promise<*[]>`
-- `callback (function)` error handler called with:
-	- `err (Error)`
-	- `*[]` results of calling `.quit()` on each client
+### `Lock.prototype.unlock() => Promise`
 
 
-### `Lock.prototype.unlock(?callback) => Promise`
-- `callback (function)` callback returning:
-	- `err (Error)`
-
-
-### `Lock.prototype.extend(ttl, ?callback) => Promise<Lock>`
+### `Lock.prototype.extend(ttl) => Promise<Lock>`
 - `ttl (number)` time from now in ms to set as the lock's new expiration
-- `callback (function)` callback returning:
-	- `err (Error)`
-	- `lock (Lock)`
 
