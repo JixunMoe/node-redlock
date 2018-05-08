@@ -1,6 +1,6 @@
 [![npm version](https://badge.fury.io/js/redlock-async.svg)](https://www.npmjs.com/package/redlock-async)
-[![Build Status](https://travis-ci.org/JixunMoe/redlock-async.svg)](https://travis-ci.org/JixunMoe/redlock-async)
-[![Coverage Status](https://coveralls.io/repos/JixunMoe/redlock-async/badge.svg)](https://coveralls.io/r/JixunMoe/redlock-async)
+[![Build Status](https://travis-ci.org/JixunMoe/node-redlock-async.svg)](https://travis-ci.org/JixunMoe/node-redlock-async)
+[![Coverage Status](https://coveralls.io/repos/JixunMoe/node-redlock-async/badge.svg)](https://coveralls.io/r/JixunMoe/node-redlock-async)
 
 Redlock-async
 =============
