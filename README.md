@@ -10,9 +10,7 @@ This is a fork of [`mike-marcacci/node-redlock`](https://github.com/mike-marcacc
 This is a node.js implementation of the [redlock](http://redis.io/topics/distlock) algorithm for distributed redis locks. It provides strong guarantees in both single-redis and multi-redis environments, and provides fault tolerance through use of multiple independent redis instances or clusters.
 
 - [Installation](#installation)
-- [Usage (Promise Style)](#usage-promise-style)
-- [Usage (Disposer Style)](#usage-disposer-style)
-- [Usage (Callback Style)](#usage-callback-style)
+- [Usage](#usage)
 - [API Docs](#api-docs)
 
 ### High-Availability Recommendations
