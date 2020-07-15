@@ -162,7 +162,10 @@ Redlock.prototype.unlock = async function unlock(lock) {
 
 		// release the lock on each server
 		self.servers.forEach(function(server){
-			server.eval(self.unlockScript, 1, lock.resource, lock.value, loop);
+			const result = server.eval(self.unlockScript, 1, lock.resource, lock.value, loop);
+			if (result instanceof Promise) {
+				result.then((res) => loop(null, res)).catch((err) => loop(err, null));
+			}
 		});
 
 		function loop(err, response) {
@@ -249,14 +252,24 @@ Redlock.prototype._lock = async function _lock(resource, value, ttl) {
 		if(value === null) {
 			value = self._random();
 			request = function(server, loop){
-				return server.eval(self.lockScript, 1, resource, value, ttl, loop);
+				const result = server.eval(self.lockScript, 1, resource, value, ttl, loop);
+				if (result instanceof Promise) {
+					return result.then((res) => loop(null, res)).catch((err) => loop(err, null));
+				} else {
+					return result;
+				}
 			};
 		}
 
 		// extend an existing lock
 		else {
 			request = function(server, loop){
-				return server.eval(self.extendScript, 1, resource, value, ttl, loop);
+				const result = server.eval(self.extendScript, 1, resource, value, ttl, loop);
+				if (result instanceof Promise) {
+					return result,then((res) => loop(null, res)).catch((err) => loop(err, null));
+				} else {
+					return result;
+				}
 			};
 		}
 
