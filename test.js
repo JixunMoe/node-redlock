@@ -5,8 +5,16 @@ var Redlock = require('./redlock');
 
 test('single-server: https://www.npmjs.com/package/redis', [require('redis').createClient()]);
 test('single-server: https://www.npmjs.com/package/redis (string_numbers=true)', [require('redis').createClient({string_numbers: true})]);
+test('single-server: https://www.npmjs.com/package/async-redis', [require('async-redis').createClient()])
 test('single-server: https://www.npmjs.com/package/ioredis', [new (require('ioredis'))()]);
 test('multi-server: https://www.npmjs.com/package/ioredis', [new (require('ioredis'))({db: 1}), new (require('ioredis'))({db: 2}), new (require('ioredis'))({db: 3})]);
+
+
+function handleAsyncResult(result, cb) {
+	if (result instanceof Promise) {
+		result.then(() => cb(null)).catch(e => cb(e));
+	} 
+}
 
 /* istanbul ignore next */
 function test(name, clients){
@@ -25,7 +33,8 @@ function test(name, clients){
 			var err;
 			var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 			for (var i = clients.length - 1; i >= 0; i--) {
-				clients[i].sadd(error, 'having a set here should cause a failure', cb);
+				var result = clients[i].sadd(error, 'having a set here should cause a failure', cb);
+				handleAsyncResult(result, cb)
 			}
 		});
 
@@ -74,7 +83,8 @@ function test(name, clients){
 				var err;
 				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
-					clients[i].del(resource, cb);
+					var result = clients[i].del(resource, cb);
+					handleAsyncResult(result, cb)
 				}
 			});
 
@@ -197,7 +207,8 @@ function test(name, clients){
 				var err;
 				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
-					clients[i].del(resource, cb);
+					var result = clients[i].del(resource, cb);
+					handleAsyncResult(result, cb);
 				}
 			});
 		});

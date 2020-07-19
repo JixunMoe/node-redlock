@@ -39,7 +39,8 @@
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^5.1.1",
     "nyc": "^11.7.1",
-    "redis": "^2.7.1"
+    "redis": "^2.7.1",
+    "async-redis": "^1.1.7"
   },
   "config": {
     "blanket": {
