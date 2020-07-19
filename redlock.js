@@ -24,7 +24,7 @@ var defaults = {
 
 // handleAsyncResult
 // ---
-// Function used to handle support of asynchronous redis clients.
+// Function used to handle support of asynchronous redis clients result.
 function handleAsyncResult(result, callback) {
 	if (result instanceof Promise) {
 		return result.then((res) => callback(null, res)).catch((err) => callback(err, null));
