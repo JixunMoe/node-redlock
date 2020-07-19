@@ -29,7 +29,7 @@ function handleAsyncResult(result, callback) {
 	if (result instanceof Promise) {
 		return result.then((res) => callback(null, res)).catch((err) => callback(err, null));
 	} 
-	return result
+	return result;
 }
 
 
@@ -259,7 +259,7 @@ Redlock.prototype._lock = async function _lock(resource, value, ttl) {
 			value = self._random();
 			request = function(server, loop){
 				const result = server.eval(self.lockScript, 1, resource, value, ttl, loop);
-				handleAsyncResult(result, loop)
+				handleAsyncResult(result, loop);
 			};
 		}
 
@@ -267,7 +267,7 @@ Redlock.prototype._lock = async function _lock(resource, value, ttl) {
 		else {
 			request = function(server, loop){
 				const result = server.eval(self.extendScript, 1, resource, value, ttl, loop);
-				handleAsyncResult(result, loop)
+				handleAsyncResult(result, loop);
 			};
 		}
 

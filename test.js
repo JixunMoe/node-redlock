@@ -34,7 +34,7 @@ function test(name, clients){
 			var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 			for (var i = clients.length - 1; i >= 0; i--) {
 				var result = clients[i].sadd(error, 'having a set here should cause a failure', cb);
-				handleAsyncResult(result, cb)
+				handleAsyncResult(result, cb);
 			}
 		});
 
@@ -84,7 +84,7 @@ function test(name, clients){
 				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
 					var result = clients[i].del(resource, cb);
-					handleAsyncResult(result, cb)
+					handleAsyncResult(result, cb);
 				}
 			});
 
