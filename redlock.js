@@ -22,7 +22,15 @@ var defaults = {
 	retryJitter: 100
 };
 
-
+// handleAsyncResult
+// ---
+// Function used to handle support of asynchronous redis clients result.
+function handleAsyncResult(result, callback) {
+	if (result instanceof Promise) {
+		return result.then((res) => callback(null, res)).catch((err) => callback(err, null));
+	} 
+	return result;
+}
 
 
 
@@ -162,7 +170,8 @@ Redlock.prototype.unlock = async function unlock(lock) {
 
 		// release the lock on each server
 		self.servers.forEach(function(server){
-			server.eval(self.unlockScript, 1, lock.resource, lock.value, loop);
+			const result = server.eval(self.unlockScript, 1, lock.resource, lock.value, loop);
+			handleAsyncResult(result, loop);
 		});
 
 		function loop(err, response) {
@@ -249,14 +258,16 @@ Redlock.prototype._lock = async function _lock(resource, value, ttl) {
 		if(value === null) {
 			value = self._random();
 			request = function(server, loop){
-				return server.eval(self.lockScript, 1, resource, value, ttl, loop);
+				const result = server.eval(self.lockScript, 1, resource, value, ttl, loop);
+				handleAsyncResult(result, loop);
 			};
 		}
 
 		// extend an existing lock
 		else {
 			request = function(server, loop){
-				return server.eval(self.extendScript, 1, resource, value, ttl, loop);
+				const result = server.eval(self.extendScript, 1, resource, value, ttl, loop);
+				handleAsyncResult(result, loop);
 			};
 		}
 
