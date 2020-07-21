@@ -5,6 +5,9 @@
   "engines": {
     "node": ">=7.10"
   },
+  "files": [
+    "redlock.js"
+  ],
   "main": "redlock.js",
   "scripts": {
     "test": "mocha --exit",
