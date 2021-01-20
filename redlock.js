@@ -303,12 +303,14 @@ Redlock.prototype._lock = async function _lock(resource, value, ttl) {
 				return (async function () {
 					try {
 						await lock.unlock();
-					} finally {					// RETRY
-						if(self.retryCount === -1 || attempts <= self.retryCount)
-							return setTimeout(attempt, Math.max(0, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter)));
-
-						// FAILED
-						return reject(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".', attempts));
+					} finally {
+						if(self.retryCount === -1 || attempts <= self.retryCount) {
+							// retry later.
+							setTimeout(attempt, Math.max(0, self.retryDelay + Math.floor((Math.random() * 2 - 1) * self.retryJitter)));
+						} else {
+							// failed
+							reject(new LockError('Exceeded ' + self.retryCount + ' attempts to lock the resource "' + resource + '".', attempts));
+						}
 					}
 				})();
 			}

@@ -31,7 +31,7 @@ function test(name, clients){
 
 		before(function(done) {
 			var err;
-			var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
+			var l = clients.length; function cb(e){ if(e) {err = e}; l--; if(l === 0) done(err); }
 			for (var i = clients.length - 1; i >= 0; i--) {
 				var result = clients[i].sadd(error, 'having a set here should cause a failure', cb);
 				handleAsyncResult(result, cb);
@@ -50,16 +50,16 @@ function test(name, clients){
 
 		it('emits a clientError event when a client error occurs', async function(){
 			var emitted = 0;
-			function test(err) {
+			function checkError(err) {
 				assert.isNotNull(err);
 				emitted++;
 			}
-			redlock.on('clientError', test);
+			redlock.on('clientError', checkError);
 			try {
 				await redlock.lock(error, 200);
 				assert(false, 'it should fail');
 			} catch (err) {
-				redlock.removeListener('clientError', test);
+				redlock.removeListener('clientError', checkError);
 				assert.isNotNull(err);
 				assert.equal(emitted, 3 * redlock.servers.length);
 			}
@@ -81,7 +81,7 @@ function test(name, clients){
 		describe('promises', function(){
 			before(function(done) {
 				var err;
-				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
+				var l = clients.length; function cb(e){ if(e) {err = e}; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
 					var result = clients[i].del(resource, cb);
 					handleAsyncResult(result, cb);
@@ -205,7 +205,7 @@ function test(name, clients){
 
 			after(function(done) {
 				var err;
-				var l = clients.length; function cb(e){ if(e) err = e; l--; if(l === 0) done(err); }
+				var l = clients.length; function cb(e){ if(e) {err = e}; l--; if(l === 0) done(err); }
 				for (var i = clients.length - 1; i >= 0; i--) {
 					var result = clients[i].del(resource, cb);
 					handleAsyncResult(result, cb);
